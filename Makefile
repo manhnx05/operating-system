@@ -25,7 +25,10 @@ all: quadraticos.iso
 quadraticos.iso: kernel.bin
 	mkdir -p isodir/boot/grub
 	cp kernel.bin isodir/boot/kernel.bin
-	echo 'menuentry "Quadratic OS" {' > isodir/boot/grub/grub.cfg
+	echo 'set timeout=0' > isodir/boot/grub/grub.cfg
+	echo 'set default=0' >> isodir/boot/grub/grub.cfg
+	echo '' >> isodir/boot/grub/grub.cfg
+	echo 'menuentry "Quadratic OS" {' >> isodir/boot/grub/grub.cfg
 	echo '  multiboot /boot/kernel.bin' >> isodir/boot/grub/grub.cfg
 	echo '  boot' >> isodir/boot/grub/grub.cfg
 	echo '}' >> isodir/boot/grub/grub.cfg
