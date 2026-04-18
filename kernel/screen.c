@@ -25,6 +25,16 @@ void print_char(char c) {
     if (c == '\n') {
         cursor_x = 0;
         cursor_y++;
+    } else if (c == '\b') {
+        if (cursor_x > 0) {
+            cursor_x--;
+        } else if (cursor_y > 0) {
+            cursor_y--;
+            cursor_x = WIDTH - 1;
+        }
+        // Clear the character at the new position
+        video_memory[2 * (cursor_y * WIDTH + cursor_x)] = ' ';
+        video_memory[2 * (cursor_y * WIDTH + cursor_x) + 1] = 0x07;
     } else {
         video_memory[2 * (cursor_y * WIDTH + cursor_x)] = c;
         video_memory[2 * (cursor_y * WIDTH + cursor_x) + 1] = 0x07;
@@ -37,7 +47,19 @@ void print_char(char c) {
     }
     
     if (cursor_y >= HEIGHT) {
-        clear_screen();
+        // Scroll up
+        for (int y = 0; y < HEIGHT - 1; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                video_memory[2 * (y * WIDTH + x)] = video_memory[2 * ((y + 1) * WIDTH + x)];
+                video_memory[2 * (y * WIDTH + x) + 1] = video_memory[2 * ((y + 1) * WIDTH + x) + 1];
+            }
+        }
+        // Clear last line
+        for (int x = 0; x < WIDTH; x++) {
+            video_memory[2 * ((HEIGHT - 1) * WIDTH + x)] = ' ';
+            video_memory[2 * ((HEIGHT - 1) * WIDTH + x) + 1] = 0x07;
+        }
+        cursor_y = HEIGHT - 1;
     }
 }
 
@@ -61,6 +83,17 @@ void print_int(int n) {
 }
 
 void print_float(float f) {
+    // Handle special cases
+    if (f != f) { // NaN check
+        print_string("NaN");
+        return;
+    }
+    
+    if (f < 0) {
+        print_char('-');
+        f = -f;
+    }
+    
     int int_part = (int)f;
     float frac_part = f - int_part;
     
