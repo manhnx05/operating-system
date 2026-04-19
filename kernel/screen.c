@@ -6,6 +6,11 @@
 
 static int cursor_x = 0;
 static int cursor_y = 0;
+static unsigned char current_color = 0x07; // Default: light grey on black
+
+void set_color(unsigned char foreground, unsigned char background) {
+    current_color = (background << 4) | (foreground & 0x0F);
+}
 
 void clear_screen() {
     unsigned char* video_memory = (unsigned char*) VIDEO_MEMORY;
@@ -17,6 +22,7 @@ void clear_screen() {
     }
     cursor_x = 0;
     cursor_y = 0;
+    current_color = 0x07;
 }
 
 void print_char(char c) {
@@ -34,10 +40,10 @@ void print_char(char c) {
         }
         // Clear the character at the new position
         video_memory[2 * (cursor_y * WIDTH + cursor_x)] = ' ';
-        video_memory[2 * (cursor_y * WIDTH + cursor_x) + 1] = 0x07;
+        video_memory[2 * (cursor_y * WIDTH + cursor_x) + 1] = current_color;
     } else {
         video_memory[2 * (cursor_y * WIDTH + cursor_x)] = c;
-        video_memory[2 * (cursor_y * WIDTH + cursor_x) + 1] = 0x07;
+        video_memory[2 * (cursor_y * WIDTH + cursor_x) + 1] = current_color;
         cursor_x++;
         
         if (cursor_x >= WIDTH) {
@@ -112,4 +118,41 @@ void print_float(float f) {
 void set_cursor_position(int x, int y) {
     cursor_x = x;
     cursor_y = y;
+}
+
+void print_colored(const char* str, unsigned char fg, unsigned char bg) {
+    unsigned char old_color = current_color;
+    set_color(fg, bg);
+    print_string(str);
+    current_color = old_color;
+}
+
+void draw_box(int x, int y, int width, int height, unsigned char color) {
+    unsigned char* video_memory = (unsigned char*) VIDEO_MEMORY;
+    
+    // Draw top and bottom borders
+    for (int i = 0; i < width; i++) {
+        video_memory[2 * (y * WIDTH + x + i)] = (i == 0 || i == width - 1) ? '+' : '-';
+        video_memory[2 * (y * WIDTH + x + i) + 1] = color;
+        video_memory[2 * ((y + height - 1) * WIDTH + x + i)] = (i == 0 || i == width - 1) ? '+' : '-';
+        video_memory[2 * ((y + height - 1) * WIDTH + x + i) + 1] = color;
+    }
+    
+    // Draw left and right borders
+    for (int i = 1; i < height - 1; i++) {
+        video_memory[2 * ((y + i) * WIDTH + x)] = '|';
+        video_memory[2 * ((y + i) * WIDTH + x) + 1] = color;
+        video_memory[2 * ((y + i) * WIDTH + x + width - 1)] = '|';
+        video_memory[2 * ((y + i) * WIDTH + x + width - 1) + 1] = color;
+    }
+}
+
+void print_centered(const char* str, int y) {
+    int len = 0;
+    const char* p = str;
+    while (*p++) len++;
+    
+    int x = (WIDTH - len) / 2;
+    set_cursor_position(x, y);
+    print_string(str);
 }
